@@ -33,4 +33,3 @@ class RevisionError(Exception):
 
 class ConnectionError(Exception):
     """Errors that occurred with the connection"""
-

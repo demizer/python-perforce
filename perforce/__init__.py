@@ -9,15 +9,23 @@ Pythonic Perforce API
 :license: MIT, see LICENSE for more details
 """
 
-__title__ = 'perforce'
-__version__ = '0.3.17'
-__author__ = 'Brett Dixon'
-__license__ = 'MIT'
-__copyright__ = 'Copyright 2015 Brett Dixon'
+__title__ = "perforce"
+__version__ = "0.3.17"
+__author__ = "Brett Dixon"
+__license__ = "MIT"
+__copyright__ = "Copyright 2015 Brett Dixon"
 
 import logging.config
 
-from .models import Connection, Revision, Changelist, ConnectionStatus, ErrorLevel, Client, Stream
+from .models import (
+    Connection,
+    Revision,
+    Changelist,
+    ConnectionStatus,
+    ErrorLevel,
+    Client,
+    Stream,
+)
 from .api import connect, edit, sync, info, changelist, open
 
 
