@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 perforce.models
 ~~~~~~~~~~~~~~~
@@ -25,8 +23,8 @@ import six
 
 from perforce import errors
 
+LOGGER = logging.getLogger(__name__)
 
-LOGGER = logging.getLogger('Perforce')
 CHAR_LIMIT = 8000
 DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
 FORMAT = """Change: {change}
@@ -276,10 +274,19 @@ and port')
                             records.append({str(k, 'utf8'): str(v) if isinstance(v, int) else str(v, 'utf8', errors='ignore') for k, v in record.items()})
             except EOFError:
                 pass
-
-            stdout, stderr = proc.communicate()
+            _, stderr = proc.communicate()
         else:
-            records, stderr = proc.communicate()
+            while True:
+                output = proc.stdout.readline()
+                if len(output) == 0 and proc.poll() is not None:
+                    break
+                if output:
+                    output_buf = output.strip()
+                    if six.PY3:
+                        output_buf = str(output.strip(), "utf8")
+                    LOGGER.info(output_buf)
+            proc.poll()
+            _, stderr = proc.communicate()
 
         if stderr:
             raise errors.CommandError(stderr, command)
