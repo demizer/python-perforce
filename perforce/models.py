@@ -1234,12 +1234,14 @@ class Client(FormObject):
         # remove existing views
         for k in list(self._p4dict):
             if k.startswith("view"):
+                LOGGER.debug("removing view '%s'", self._p4dict[k])
                 self._p4dict.pop(k)
         # Re-add views
         for k, v in enumerate(value):
             self._p4dict["view{}".format(k)] = "{} //{}/{}".format(
                 v, self.client, v[2:]
             )
+            LOGGER.debug("Added view '%s'", self._p4dict["view{}".format(k)])
         self._dirty = True
 
     @property
