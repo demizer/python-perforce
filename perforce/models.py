@@ -304,8 +304,11 @@ class Connection(object):
             except EOFError:
                 pass
             _, stderr = proc.communicate()
+        elif stdin:
+            _, stderr = proc.communicate()
         else:
             while True:
+                # use threads http://www.lysator.liu.se/~bellman/download/asyncproc.py
                 output = proc.stdout.readline()
                 if len(output) == 0 and proc.poll() is not None:
                     break
@@ -473,22 +476,28 @@ class FormObject(PerforceObject):
         super(FormObject, self).__init__(connection)
         self._dirty = False
 
+    @property
+    def isDirty(self):
+        """Does this client or changelist have unsaved changes"""
+        return self._dirty
+
     def save(self):
-        """Saves the state of the changelist"""
+        """Saves the state of the changelist or client"""
         if not self._dirty:
             return
 
         fields = []
         formdata = dict(self._p4dict)
         del formdata["code"]
+
         for key, value in six.iteritems(formdata):
             match = re.search("\\d$", key)
             if match:
                 value = "\t{}".format(value)
                 key = key[: match.start()]
-
             value = value.replace("\n", "\n\t")
             fields.append("{}:  {}".format(key, value))
+
         form = "\n".join(fields)
         self._connection.run([self.COMMAND, "-i"], stdin=form, marshal_output=False)
         self._dirty = False
@@ -1174,7 +1183,7 @@ class Client(FormObject):
 
     @property
     def host(self):
-        return self._p4dict["host"]
+        return self._p4dict.get("host", None)
 
     @host.setter
     def host(self, value):
@@ -1183,7 +1192,7 @@ class Client(FormObject):
 
     @property
     def lineEnd(self):
-        return self._p4dict["lineEnd"]
+        return self._p4dict.get("lineEnd", None)
 
     @lineEnd.setter
     def lineEnd(self, value):
@@ -1192,7 +1201,7 @@ class Client(FormObject):
 
     @property
     def owner(self):
-        return self._p4dict["owner"]
+        return self._p4dict.get("owner", None)
 
     @owner.setter
     def owner(self, value):
@@ -1201,7 +1210,7 @@ class Client(FormObject):
 
     @property
     def submitOptions(self):
-        return self._p4dict["submitOptions"]
+        return self._p4dict.get("submitOptions", None)
 
     @submitOptions.setter
     def submitOptions(self, value):
@@ -1219,6 +1228,19 @@ class Client(FormObject):
                     spec.append(FileSpec(v[: match.end() - 1], v[match.end() :]))
 
         return spec
+
+    @view.setter
+    def view(self, value):
+        # remove existing views
+        for k in list(self._p4dict):
+            if k.startswith("view"):
+                self._p4dict.pop(k)
+        # Re-add views
+        for k, v in enumerate(value):
+            self._p4dict["view{}".format(k)] = "{} //{}/{}".format(
+                v, self.client, v[2:]
+            )
+        self._dirty = True
 
     @property
     def access(self):
