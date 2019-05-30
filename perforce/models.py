@@ -499,6 +499,7 @@ class FormObject(PerforceObject):
             fields.append("{}:  {}".format(key, value))
 
         form = "\n".join(fields)
+        LOGGER.debug("Saving client")
         self._connection.run([self.COMMAND, "-i"], stdin=form, marshal_output=False)
         self._dirty = False
 
@@ -1151,12 +1152,13 @@ class Client(FormObject):
     """Represents a client(workspace) for a given connection"""
 
     COMMAND = "client"
+    client = None
 
     def __init__(self, client, connection=None):
         super(Client, self).__init__(connection=connection)
 
         assert client is not None
-
+        self.client = client
         results = self._connection.run(["client", "-o", client])[0]
         self._p4dict = {camel_case(k): v for k, v in six.iteritems(results)}
 
@@ -1165,12 +1167,13 @@ class Client(FormObject):
 
     @property
     def root(self):
-        """Root path fo the client"""
+        """Root path for the client"""
         return path.Path(self._p4dict["root"])
 
-    @property
-    def client(self):
-        return self._p4dict["client"]
+    @root.setter
+    def root(self, value):
+        self._p4dict["root"] = value.strip()
+        self._dirty = True
 
     @property
     def description(self):
